@@ -24,8 +24,25 @@ app.get("/talker", (req, res) => {
 
     if (data.length > 0) {
       res.status(200).json(data);
+    } else {
+      res.status(200).json([]);
     }
-    res.status(200).json([]);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+app.get("/talker/:id", (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const data = readDataFile();
+
+    const filteredPerson = data.find((person) => person.id === Number(id));
+    if (filteredPerson) {
+      return res.status(200).json(filteredPerson);
+    }
+    res.status(404).json({ message: "Pessoa palestrante não encontrada" });
   } catch (err) {
     console.log(err);
   }
