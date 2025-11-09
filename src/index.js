@@ -1,5 +1,6 @@
 const express = require('express');
 const fs = require('fs');
+const loginSchema = require('./validations/schemaLogin');
 
 const app = express();
 app.use(express.json());
@@ -48,6 +49,16 @@ app.get('/talker/:id', (req, res) => {
   }
 });
 
+const validateLogin = (req, res, next) => {
+  const result = loginSchema.safeParse(req.body);
+
+  if (!result.success) {
+    const { message } = result.error.issues[0];
+    return res.status(400).json({ message });
+  }
+  next();
+};
+
 const generateToken = () => {
   const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const token = Array.from({ length: 16 }, () => {
@@ -57,7 +68,7 @@ const generateToken = () => {
   return token;
 };
 
-app.post('/login', (req, res) => {
+app.post('/login', validateLogin, (req, res) => {
   const { email, password } = req.body;
   const token = generateToken();
 
@@ -66,7 +77,7 @@ app.post('/login', (req, res) => {
       console.log(token);
       res.status(200).json({ token });
     } else {
-      res.status(500).json({ message: 'Email ou password incorretos.' });
+      res.status(400).json({ message: 'Email ou password incorretos.' });
     }
   } catch (err) {
     console.log(err);
