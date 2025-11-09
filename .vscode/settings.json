@@ -1,0 +1,11 @@
+{
+  "editor.formatOnSave": false,
+  "[javascript]": {
+    "editor.defaultFormatter": null
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "always"
+  },
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "eslint.nodePath": "./node_modules"
+}

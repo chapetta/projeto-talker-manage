@@ -1,24 +1,24 @@
-const express = require("express");
-const fs = require("fs");
+const express = require('express');
+const fs = require('fs');
 
 const app = express();
 app.use(express.json());
 
 const HTTP_OK_STATUS = 200;
-const PORT = process.env.PORT || "3001";
+const PORT = process.env.PORT || '3001';
 
 const readDataFile = () => {
-  const data = fs.readFileSync("src/talker.json", "utf8");
+  const data = fs.readFileSync('src/talker.json', 'utf8');
 
   return JSON.parse(data);
 };
 
 // não remova esse endpoint, e para o avaliador funcionar
-app.get("/", (_request, response) => {
+app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
 });
 
-app.get("/talker", (req, res) => {
+app.get('/talker', (req, res) => {
   try {
     const data = readDataFile();
 
@@ -32,7 +32,7 @@ app.get("/talker", (req, res) => {
   }
 });
 
-app.get("/talker/:id", (req, res) => {
+app.get('/talker/:id', (req, res) => {
   const { id } = req.params;
 
   try {
@@ -42,12 +42,38 @@ app.get("/talker/:id", (req, res) => {
     if (filteredPerson) {
       return res.status(200).json(filteredPerson);
     }
-    res.status(404).json({ message: "Pessoa palestrante não encontrada" });
+    res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
   } catch (err) {
     console.log(err);
   }
 });
 
+const generateToken = () => {
+  const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const token = Array.from({ length: 16 }, () => {
+    const index = Math.floor(Math.random() * CHARS.length);
+    return CHARS[index];
+  }).join('');
+  return token;
+};
+
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  const token = generateToken();
+
+  try {
+    if (email && password) {
+      console.log(token);
+      res.status(200).json({ token });
+    } else {
+      res.status(500).json({ message: 'Email ou password incorretos.' });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'Erro ao na execução' });
+  }
+});
+
 app.listen(PORT, () => {
-  console.log("Online");
+  console.log('Online');
 });
