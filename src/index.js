@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const loginSchema = require('./validations/schemaLogin');
+const { talkerSchema, tokenSchema } = require('./validations/schemaTaker');
 
 const app = express();
 app.use(express.json());
@@ -59,6 +60,27 @@ const validateLogin = (req, res, next) => {
   next();
 };
 
+const validateTalker = (req, res, next) => {
+  const result = talkerSchema.safeParse(req.body);
+
+  if (!result.success) {
+    const { message } = result.error.issues[0];
+    return res.status(400).json({ message });
+  }
+
+  next();
+};
+
+const validateToken = (req, res, next) => {
+  const result = tokenSchema.safeParse(req.headers.authorization);
+
+  if (!result.success) {
+    const { message } = result.error.issues[0];
+    return res.status(401).json({ message });
+  }
+  next();
+};
+
 const generateToken = () => {
   const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const token = Array.from({ length: 16 }, () => {
@@ -74,7 +96,6 @@ app.post('/login', validateLogin, (req, res) => {
 
   try {
     if (email && password) {
-      console.log(token);
       res.status(200).json({ token });
     } else {
       res.status(400).json({ message: 'Email ou password incorretos.' });
@@ -83,6 +104,12 @@ app.post('/login', validateLogin, (req, res) => {
     console.log(err);
     res.status(500).json({ message: 'Erro ao na execução' });
   }
+});
+
+app.post('/talker', validateToken, validateTalker, (req, res) => {
+  const talker = req.body;
+
+  return res.status(201).json(talker);
 });
 
 app.listen(PORT, () => {
