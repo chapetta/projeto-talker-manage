@@ -57,7 +57,8 @@ const validateLogin = (req, res, next) => {
     const { message } = result.error.issues[0];
     return res.status(400).json({ message });
   }
-  next();
+  req.body = result.data;
+  return next();
 };
 
 const validateTalker = (req, res, next) => {
@@ -68,17 +69,20 @@ const validateTalker = (req, res, next) => {
     return res.status(400).json({ message });
   }
 
-  next();
+  req.body = result.data;
+  return next();
 };
 
 const validateToken = (req, res, next) => {
-  const result = tokenSchema.safeParse(req.headers.authorization);
+  const { authorization } = req.headers;
+  const result = tokenSchema.safeParse(authorization);
 
   if (!result.success) {
     const { message } = result.error.issues[0];
     return res.status(401).json({ message });
   }
-  next();
+
+  return next();
 };
 
 const generateToken = () => {
@@ -107,9 +111,21 @@ app.post('/login', validateLogin, (req, res) => {
 });
 
 app.post('/talker', validateToken, validateTalker, (req, res) => {
-  const talker = req.body;
+  try {
+    const dataTalkers = readDataFile();
+    const nextId = dataTalkers.length > 0
+      ? Math.max(...dataTalkers.map(({ id }) => id)) + 1
+      : 1;
+    const newTalker = { id: nextId, ...req.body };
+    const updatedList = [...dataTalkers, newTalker];
 
-  return res.status(201).json(talker);
+    fs.writeFileSync('src/talker.json', JSON.stringify(updatedList, null, 2));
+
+    return res.status(201).json(newTalker);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ message: 'Erro ao cadastrar palestrante' });
+  }
 });
 
 app.listen(PORT, () => {
