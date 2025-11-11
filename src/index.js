@@ -46,19 +46,60 @@ const validateToken = (req, res, next) => {
   return next();
 };
 
+const validateRateQuery = (rate) => {
+  if (rate === undefined) {
+    return { hasRate: false, parsedRate: undefined, isInvalid: false };
+  }
+
+  const parsedRate = Number(rate);
+  const isInvalid = !Number.isInteger(parsedRate) || parsedRate < 1 || parsedRate > 5;
+
+  return { hasRate: true, parsedRate, isInvalid };
+};
+
+const filterTalkers = (talkers, q, hasRate, parsedRate) => {
+  const byName = typeof q === 'string' && q.length > 0
+    ? talkers.filter((talker) => talker.name.includes(q))
+    : talkers;
+
+  if (!hasRate) {
+    return byName;
+  }
+
+  return byName.filter((talker) => talker.talk && talker.talk.rate === parsedRate);
+};
+
+const handleInvalidRate = (res) => res.status(400).json({
+  message: 'O campo "rate" deve ser um número inteiro entre 1 e 5',
+});
+
+const buildSearchResult = (talkers, q, rateInfo) => {
+  if (q === undefined && !rateInfo.hasRate) {
+    return [];
+  }
+
+  if (q === '') {
+    return rateInfo.hasRate
+      ? filterTalkers(talkers, undefined, true, rateInfo.parsedRate)
+      : talkers;
+  }
+
+  return filterTalkers(talkers, q, rateInfo.hasRate, rateInfo.parsedRate);
+};
+
 app.get('/talker/search', validateToken, (req, res) => {
-  const searchTerm = req.query.q;
+  const { q, rate } = req.query;
   try {
-    const data = readDataFile();
-    const findTalkerBySearch = data.filter((talker) => talker.name.includes(searchTerm));
-    if (!searchTerm && searchTerm === '') {
-      return res.status(200).json(data);
-    } if (!findTalkerBySearch) {
-      return res.status(200).json([]);
-    } 
-    return res.status(200).json(findTalkerBySearch);
+    const talkers = readDataFile();
+    const rateInfo = validateRateQuery(rate);
+
+    if (rateInfo.isInvalid) {
+      return handleInvalidRate(res);
+    }
+
+    const filteredTalkers = buildSearchResult(talkers, q, rateInfo);
+    return res.status(200).json(filteredTalkers);
   } catch (err) {
-    console.log(err);
     return res.status(500).json({ message: 'Não foi possivel buscar uma pessoa palestrante' });
   }
 });
