@@ -34,6 +34,35 @@ app.get('/talker', (req, res) => {
   }
 });
 
+const validateToken = (req, res, next) => {
+  const { authorization } = req.headers;
+  const result = tokenSchema.safeParse(authorization);
+
+  if (!result.success) {
+    const { message } = result.error.issues[0];
+    return res.status(401).json({ message });
+  }
+
+  return next();
+};
+
+app.get('/talker/search', validateToken, (req, res) => {
+  const searchTerm = req.query.q;
+  try {
+    const data = readDataFile();
+    const findTalkerBySearch = data.filter((talker) => talker.name.includes(searchTerm));
+    if (!searchTerm && searchTerm === '') {
+      return res.status(200).json(data);
+    } if (!findTalkerBySearch) {
+      return res.status(200).json([]);
+    } 
+    return res.status(200).json(findTalkerBySearch);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ message: 'Não foi possivel buscar uma pessoa palestrante' });
+  }
+});
+
 app.get('/talker/:id', (req, res) => {
   const { id } = req.params;
 
@@ -80,18 +109,6 @@ const validateTalker = (req, res, next) => {
   return next();
 };
 
-const validateToken = (req, res, next) => {
-  const { authorization } = req.headers;
-  const result = tokenSchema.safeParse(authorization);
-
-  if (!result.success) {
-    const { message } = result.error.issues[0];
-    return res.status(401).json({ message });
-  }
-
-  return next();
-};
-
 const generateToken = () => {
   const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const token = Array.from({ length: 16 }, () => {
@@ -116,6 +133,7 @@ app.post('/login', validateLogin, (req, res) => {
     res.status(500).json({ message: 'Erro ao na execução' });
   }
 });
+
 app.put('/talker/:id', validateToken, validateTalker, (req, res) => {
   const numericId = Number(req.params.id);
   const dataTalkers = readDataFile();
