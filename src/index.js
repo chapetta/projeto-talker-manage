@@ -62,8 +62,15 @@ const validateLogin = (req, res, next) => {
 };
 
 const validateTalker = (req, res, next) => {
-  const result = talkerSchema.safeParse(req.body);
+  const { age } = req.body;
 
+  if (age !== undefined && typeof age !== 'number') {
+    return res.status(400).json({
+      message: 'O campo "age" deve ser um número inteiro igual ou maior que 18',
+    });
+  }
+
+  const result = talkerSchema.safeParse(req.body);
   if (!result.success) {
     const { message } = result.error.issues[0];
     return res.status(400).json({ message });
