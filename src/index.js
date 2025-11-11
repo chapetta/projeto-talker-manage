@@ -116,6 +116,26 @@ app.post('/login', validateLogin, (req, res) => {
     res.status(500).json({ message: 'Erro ao na execução' });
   }
 });
+app.put('/talker/:id', validateToken, validateTalker, (req, res) => {
+  const numericId = Number(req.params.id);
+  const dataTalkers = readDataFile();
+  try {
+    const talkerIndex = dataTalkers.findIndex((talker) => talker.id === numericId);
+
+    if (talkerIndex === -1) {
+      return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+    }
+
+    const updatedTalker = { id: numericId, ...req.body };
+    dataTalkers.splice(talkerIndex, 1, updatedTalker);
+    fs.writeFileSync('src/talker.json', JSON.stringify(dataTalkers, null, 2));
+
+    return res.status(200).json(updatedTalker);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ message: 'Não foi possivel editar um palestrante' });
+  }
+});
 
 app.post('/talker', validateToken, validateTalker, (req, res) => {
   try {
