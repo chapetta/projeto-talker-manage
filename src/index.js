@@ -155,6 +155,23 @@ app.post('/talker', validateToken, validateTalker, (req, res) => {
   }
 });
 
+app.delete('/talker/:id', validateToken, (req, res) => {
+  const numericId = Number(req.params.id);
+  try {
+    const dataTalkers = readDataFile();
+    const talkerIndex = dataTalkers.findIndex((talker) => talker.id === numericId);
+    if (talkerIndex === -1) {
+      return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+    }
+    dataTalkers.splice(talkerIndex, 1);
+    fs.writeFileSync('src/talker.json', JSON.stringify(dataTalkers, null, 2));
+    return res.status(204).end();
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ message: 'Não foi possível deletar um palestrante' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log('Online');
 });
